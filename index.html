@@ -653,11 +653,12 @@ async function doDrive() {
     const token = await getGoogleToken();
     btn.textContent = '⏳ Upload en cours…';
 
-    const filename = `Evaluation_${data.nom.replace(/[^a-zA-Z0-9]/g,'_')}_${data.date_analyse.replace(/\//g,'-')}.html`;
+    const filename = `Evaluation_${data.nom.replace(/[^a-zA-Z0-9]/g,'_')}_${data.date_analyse.replace(/\//g,'-')}`;
     const content = buildHtmlDoc(data);
     const blob = new Blob([content], { type: 'text/html; charset=utf-8' });
 
-    const meta = JSON.stringify({ name: filename, parents: [FOLDER_ID], mimeType: 'text/html' });
+    // mimeType Google Doc natif → Drive convertit automatiquement le HTML en document éditable
+    const meta = JSON.stringify({ name: filename, parents: [FOLDER_ID], mimeType: 'application/vnd.google-apps.document' });
     const form = new FormData();
     form.append('metadata', new Blob([meta], { type: 'application/json' }));
     form.append('file', blob);
@@ -669,7 +670,7 @@ async function doDrive() {
     });
     if (!res.ok) { const t = await res.text(); throw new Error('Drive API: ' + t.slice(0,150)); }
     const file = await res.json();
-    const fileUrl = 'https://drive.google.com/file/d/' + file.id + '/view';
+    const fileUrl = 'https://docs.google.com/document/d/' + file.id + '/edit';
 
     btn.textContent = '✓ Sauvegardé';
     btn.style.background = '#065f46';
