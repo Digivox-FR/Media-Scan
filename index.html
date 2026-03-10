@@ -246,6 +246,31 @@ main{max-width:960px;margin:0 auto;padding:28px 20px}
           </div>
         </div>
       </div>
+      <!-- Sélecteur de modèle -->
+      <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:12px">Modèle d'IA</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px" id="model-selector">
+          <label id="lbl-haiku" style="border:2px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all .2s">
+            <input type="radio" name="model" value="claude-haiku-4-5-20251001" style="display:none">
+            <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:3px">⚡ Haiku 4.5</div>
+            <div style="font-size:10.5px;color:var(--muted);line-height:1.5">Rapide · Économique<br><strong style="color:#16a34a">~0,01–0,03 € / analyse</strong></div>
+            <div style="font-size:10px;color:var(--muted);margin-top:4px">1 $/M input · 5 $/M output</div>
+          </label>
+          <label id="lbl-sonnet" style="border:2px solid var(--blue);border-radius:8px;padding:12px 14px;cursor:pointer;background:var(--blue-light);transition:all .2s">
+            <input type="radio" name="model" value="claude-sonnet-4-20250514" checked style="display:none">
+            <div style="font-weight:700;font-size:13px;color:var(--navy);margin-bottom:3px">⚖ Sonnet 4 <span style="font-size:9px;background:var(--blue);color:white;padding:1px 6px;border-radius:8px;margin-left:4px">Défaut</span></div>
+            <div style="font-size:10.5px;color:#374151;line-height:1.5">Équilibré · Recommandé<br><strong style="color:#d97706">~0,05–0,12 € / analyse</strong></div>
+            <div style="font-size:10px;color:var(--muted);margin-top:4px">3 $/M input · 15 $/M output</div>
+          </label>
+          <label id="lbl-opus" style="border:2px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;transition:all .2s">
+            <input type="radio" name="model" value="claude-opus-4-5-20251101" style="display:none">
+            <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:3px">🏆 Opus 4.5</div>
+            <div style="font-size:10.5px;color:var(--muted);line-height:1.5">Meilleure qualité<br><strong style="color:#c0392b">~0,10–0,20 € / analyse</strong></div>
+            <div style="font-size:10px;color:var(--muted);margin-top:4px">5 $/M input · 25 $/M output</div>
+          </label>
+        </div>
+        <div id="model-badge" style="margin-top:10px;font-size:11px;color:var(--muted)"></div>
+      </div>
       <div id="drive-setup" style="display:none;margin-top:16px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:14px 16px">
         <div style="font-size:11px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:8px">📋 Configuration Google Drive (5 min)</div>
         <ol style="font-size:12px;line-height:1.9;color:#0c4a6e;padding-left:16px">
@@ -313,9 +338,11 @@ function loadConfig() {
   updateApiStatus();
 }
 function saveConfig() {
+  const model = document.querySelector('input[name="model"]:checked')?.value || 'claude-sonnet-4-20250514';
   const cfg = {
     anthropic: document.getElementById('cf-anthropic').value.trim(),
-    google: document.getElementById('cf-google').value.trim()
+    google: document.getElementById('cf-google').value.trim(),
+    model
   };
   S.set('cfg', cfg);
   updateApiStatus();
@@ -327,6 +354,40 @@ function updateApiStatus() {
   const el = document.getElementById('api-status');
   if (cfg.anthropic) { el.textContent = '✓ API configurée'; el.className = 'setup-badge setup-ok'; }
   else { el.textContent = '⚠ Clé API manquante'; el.className = 'setup-badge setup-warn'; }
+}
+function initModelSelector() {
+  const cfg = S.get('cfg') || {};
+  const saved = cfg.model || 'claude-sonnet-4-20250514';
+  const labels = { 'claude-haiku-4-5-20251001':'lbl-haiku','claude-sonnet-4-20250514':'lbl-sonnet','claude-opus-4-5-20251101':'lbl-opus' };
+  // Set radio
+  const radio = document.querySelector(`input[name="model"][value="${saved}"]`);
+  if (radio) radio.checked = true;
+  // Style active
+  updateModelUI(saved);
+  // Wire clicks
+  document.querySelectorAll('input[name="model"]').forEach(r => {
+    r.addEventListener('change', () => updateModelUI(r.value));
+  });
+}
+function updateModelUI(val) {
+  const map = {
+    'claude-haiku-4-5-20251001': {id:'lbl-haiku', label:'⚡ Haiku 4.5'},
+    'claude-sonnet-4-20250514':  {id:'lbl-sonnet', label:'⚖ Sonnet 4'},
+    'claude-opus-4-5-20251101':  {id:'lbl-opus',   label:'🏆 Opus 4.5'}
+  };
+  Object.entries(map).forEach(([v, {id}]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (v === val) {
+      el.style.border = '2px solid var(--blue)';
+      el.style.background = 'var(--blue-light)';
+    } else {
+      el.style.border = '2px solid var(--border)';
+      el.style.background = 'white';
+    }
+  });
+  const badge = document.getElementById('model-badge');
+  if (badge) badge.textContent = `Modèle actif : ${map[val]?.label || val}`;
 }
 function showDriveSetup() {
   const el = document.getElementById('drive-setup');
@@ -400,7 +461,7 @@ async function doAnalyze() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': cfg.anthropic, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: cfg.model || 'claude-sonnet-4-20250514',
         max_tokens: 8000,
         system: SYSTEM,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
@@ -742,6 +803,7 @@ function delArc(id) {
 
 // ══ INIT ══
 loadConfig();
+initModelSelector();
 const idx0 = S.get('rep:index') || [];
 document.getElementById('arc-count').textContent = idx0.length;
 </script>
