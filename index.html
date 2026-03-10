@@ -345,7 +345,10 @@ IMPORTANT : fais EXACTEMENT 3 recherches web. Pas plus.
 Réponds UNIQUEMENT en JSON valide, sans markdown ni backticks.
 Schéma strict :
 {"nom":"","url":"","date_analyse":"JJ/MM/AAAA","description_courte":"","acces_contenu":"full|partiel","nb_articles_analyses":0,"criteres":{"forme":{"note":1,"analyse":"","points_positifs":[],"points_negatifs":[]},"formats":{"note":1,"analyse":"","points_positifs":[],"points_negatifs":[]},"services":{"note":1,"analyse":"","points_positifs":[],"points_negatifs":[]},"qualite":{"note":1,"analyse":"","points_positifs":[],"points_negatifs":[]},"positionnement":{"note":1,"analyse":"","points_positifs":[],"points_negatifs":[]},"orientation":{"note":1,"analyse":"","qualifications":[]},"reputation":{"note":1,"analyse":"","sources_consultees":[],"incidents":[]}},"note_globale":"X.X","synthese":"","recommandation_subvention":"favorable|reserves|defavorable","motif_recommandation":"","avertissements":[]}
-Echelle notes : 1=très insuffisant 2=insuffisant 3=correct 4=bon 5=excellent. Analyse concise : 3 phrases max par critère.`;
+Echelle notes : 1=très insuffisant 2=insuffisant 3=correct 4=bon 5=excellent.
+Champ "analyse" par critère : 4 à 5 phrases argumentées (400-500 caractères). Cite des exemples concrets observés sur le site (titre d'article, rubrique, élément de mise en page…). Justifie la note avec des faits, pas des généralités. Si le critère est bien noté, explique pourquoi ; si mal noté, précise ce qui manque.
+Champ "synthese" : 5 à 7 phrases, bilan global argumenté avec points saillants.
+Champ "motif_recommandation" : 3 à 4 phrases expliquant la recommandation finale.`;
 
 function setStep(n) {
   [1,2,3].forEach(i => {
@@ -398,7 +401,7 @@ async function doAnalyze() {
       headers: { 'Content-Type': 'application/json', 'x-api-key': cfg.anthropic, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 5000,
+        max_tokens: 8000,
         system: SYSTEM,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         messages: [{ role: 'user', content:
