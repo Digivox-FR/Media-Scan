@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Évaluateur de médias — Fonds d'émergence presse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+:root {
+  --navy: #0a1628;
+  --navy2: #152542;
+  --blue: #1a56db;
+  --blue-light: #e8f0fe;
+  --gold: #c8973a;
+  --green: #0a7c42;
+  --red: #c0392b;
+  --amber: #b45309;
+  --grey: #f4f6f9;
+  --border: #d8dee8;
+  --text: #1a2035;
+  --muted: #6b7a99;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Source Serif 4',Georgia,serif;background:#eef1f7;color:var(--text);min-height:100vh}
+
+/* ── HEADER ── */
+header{background:var(--navy);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:30px;height:30px;background:var(--gold);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.logo-text{font-family:'Playfair Display',serif;color:white;font-size:17px;font-weight:700;letter-spacing:-.3px}
+.logo-sub{font-size:10px;color:#7a90b8;text-transform:uppercase;letter-spacing:1px;margin-top:1px}
+nav{display:flex;gap:4px}
+nav button{background:none;border:none;color:#7a90b8;padding:8px 16px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;font-family:'Source Serif 4',sans-serif;text-transform:uppercase;letter-spacing:.5px;transition:all .2s}
+nav button.active{background:rgba(255,255,255,.1);color:white}
+nav button:hover{color:white}
+
+/* ── MAIN ── */
+main{max-width:960px;margin:0 auto;padding:28px 20px}
+
+/* ── CARD ── */
+.card{background:white;border-radius:10px;border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden;margin-bottom:20px}
+.card-header{background:var(--grey);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+.card-header h2{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:600;font-family:'Source Serif 4',sans-serif}
+.card-body{padding:20px}
+
+/* ── CONFIG ── */
+.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px}
+.field input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);transition:border .2s;outline:none}
+.field input:focus{border-color:var(--blue)}
+.field-hint{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5}
+.field-hint a{color:var(--blue)}
+.setup-badge{font-size:10px;padding:3px 9px;border-radius:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.setup-ok{background:#d1fae5;color:#065f46}
+.setup-warn{background:#fef3c7;color:#92400e}
+.btn-save-config{padding:9px 20px;background:var(--navy);color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.3px;margin-top:14px}
+
+/* ── ANALYZE ── */
+.url-row{display:flex;gap:10px;margin-bottom:14px}
+.url-row input{flex:1;padding:12px 16px;border:2px solid var(--border);border-radius:8px;font-size:14px;font-family:'JetBrains Mono',monospace;outline:none;transition:border .2s}
+.url-row input:focus{border-color:var(--blue)}
+.btn-analyze{padding:12px 28px;background:var(--navy);color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;font-family:'Source Serif 4',sans-serif;white-space:nowrap;transition:background .2s}
+.btn-analyze:hover{background:var(--navy2)}
+.btn-analyze:disabled{background:#94a3b8;cursor:not-allowed}
+.btn-cancel{padding:12px 20px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:'Source Serif 4',sans-serif}
+
+/* ── PROGRESS ── */
+.progress-wrap{margin-top:12px}
+.progress-top{display:flex;justify-content:space-between;margin-bottom:6px;font-size:11px;color:var(--muted)}
+.progress-stage{font-style:italic}
+.progress-bar{height:3px;background:#e2e8f0;border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--blue),#60a5fa);border-radius:3px;transition:width .5s ease}
+.steps{display:flex;margin-top:14px;gap:0}
+.step{flex:1;display:flex;flex-direction:column;align-items:center;position:relative}
+.step:not(:first-child)::before{content:'';position:absolute;top:13px;right:50%;left:-50%;height:2px;background:#e2e8f0;z-index:0}
+.step.done::before,.step.active::before{background:var(--blue)}
+.step-dot{width:26px;height:26px;border-radius:50%;background:white;border:2px solid #e2e8f0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#9ca3af;position:relative;z-index:1;transition:all .3s}
+.step.active .step-dot{border-color:var(--blue);color:var(--blue);background:#eff6ff}
+.step.done .step-dot{border-color:var(--blue);background:var(--blue);color:white}
+.step-label{font-size:10px;color:#9ca3af;margin-top:5px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.step.active .step-label,.step.done .step-label{color:var(--blue)}
+
+/* ── REPORT ── */
+.report-header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:white;padding:28px 28px 22px;border-radius:10px 10px 0 0}
+.report-meta{font-size:10px;text-transform:uppercase;letter-spacing:1.4px;color:#7a90b8;margin-bottom:8px}
+.report-name{font-family:'Playfair Display',serif;font-size:26px;font-weight:900;line-height:1.15;margin-bottom:6px}
+.report-url{font-size:11.5px;color:#7a90b8;margin-bottom:12px}
+.report-url a{color:#60a5fa}
+.report-desc{font-size:12.5px;color:#c8d5ea;line-height:1.65;border-left:3px solid var(--gold);padding-left:12px;font-style:italic}
+.score-grid{display:grid;grid-template-columns:140px 1fr;gap:14px;padding:16px 20px;border-bottom:1px solid var(--border)}
+.score-big{text-align:center;padding:16px 10px;border-right:1px solid var(--border)}
+.score-label{font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:6px}
+.score-num{font-family:'Playfair Display',serif;font-size:52px;font-weight:900;line-height:1}
+.score-tag{font-size:10px;color:var(--muted);margin-top:4px}
+.criteria-list{padding:4px 0}
+.crit-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #f3f4f6;font-size:12px}
+.crit-row:last-child{border:none}
+.crit-name{color:var(--text)}
+.crit-score{font-weight:700;font-family:'JetBrains Mono',monospace;font-size:11.5px}
+.reco-block{padding:14px 20px;border-bottom:1px solid var(--border)}
+.reco-label{font-size:9px;text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:4px}
+.reco-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:7px}
+.reco-text{font-size:12.5px;line-height:1.7;color:#374151}
+.warns{margin:0 20px 14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:7px;padding:10px 14px}
+.warns-head{font-size:9px;font-weight:700;text-transform:uppercase;color:#c2410c;margin-bottom:4px}
+.warns-item{font-size:11.5px;color:#7c2d12}
+.synth-block{padding:14px 20px;border-bottom:1px solid var(--border);background:#f8fafc}
+.synth-label{font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:700;margin-bottom:7px}
+.synth-text{font-size:13px;line-height:1.85;color:var(--text)}
+.detail-head{padding:12px 20px 6px;font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:700}
+
+/* ── ACCORDION ── */
+.acc-item{border-bottom:1px solid #f0f4f8}
+.acc-btn{width:100%;display:flex;align-items:center;justify-content:space-between;padding:11px 20px;background:none;border:none;cursor:pointer;text-align:left;gap:8px;transition:background .15s}
+.acc-btn:hover{background:#f9fafc}
+.acc-left{display:flex;align-items:center;gap:10px;flex:1}
+.acc-icon{font-size:16px}
+.acc-title{font-size:12.5px;font-weight:700;color:var(--text);font-family:'Source Serif 4',serif}
+.acc-desc{font-size:10px;color:var(--muted);margin-top:1px}
+.acc-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.acc-score{font-weight:700;font-family:'JetBrains Mono',monospace;font-size:11.5px}
+.acc-chevron{color:#9ca3af;transition:transform .2s;font-size:13px}
+.acc-body{padding:0 20px 14px;background:#f9fafc;border-top:1px solid #f0f4f8}
+.acc-analysis{font-size:12.5px;line-height:1.75;color:var(--text);margin:10px 0}
+.acc-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+.acc-col-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.acc-point{font-size:11.5px;display:flex;gap:5px;margin-bottom:3px;line-height:1.5}
+.tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.tag{background:#eff6ff;color:#1d4ed8;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:600}
+.incidents{margin-top:8px;padding:8px 12px;background:#fff7ed;border-radius:6px;font-size:11.5px;color:#92400e}
+
+/* ── EXPORT BAR ── */
+.export-bar{padding:14px 20px;display:flex;gap:10px;justify-content:flex-end;align-items:center;border-top:1px solid var(--border);background:#f8fafc;flex-wrap:wrap}
+.btn-pdf{padding:10px 22px;background:var(--navy);color:white;border:none;border-radius:6px;cursor:pointer;font-size:12.5px;font-weight:700;font-family:'Source Serif 4',sans-serif;display:flex;align-items:center;gap:7px;transition:background .2s}
+.btn-pdf:hover{background:var(--navy2)}
+.btn-drive{padding:10px 22px;background:#1967d2;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12.5px;font-weight:700;font-family:'Source Serif 4',sans-serif;display:flex;align-items:center;gap:7px;transition:background .2s}
+.btn-drive:hover{background:#1558b0}
+.btn-drive:disabled{background:#94a3b8;cursor:not-allowed}
+.export-status{font-size:11.5px;padding:7px 12px;border-radius:5px}
+.export-ok{background:#d1fae5;color:#065f46}
+.export-err{background:#fee2e2;color:#991b1b}
+
+/* ── ARCHIVES ── */
+.arc-grid{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:start}
+.arc-list{background:white;border-radius:10px;border:1px solid var(--border);position:sticky;top:70px;max-height:calc(100vh - 90px);overflow-y:auto}
+.arc-list-head{padding:12px 16px;border-bottom:1px solid var(--border);font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700;background:var(--grey)}
+.arc-item{padding:10px 14px;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:background .15s}
+.arc-item:hover{background:#f8fafc}
+.arc-item.sel{background:#eff6ff;border-left:3px solid var(--blue)}
+.arc-item-name{font-size:12.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Source Serif 4',serif}
+.arc-item-meta{font-size:10px;color:var(--muted);margin-top:2px;display:flex;justify-content:space-between}
+.arc-item-note{font-weight:800;font-size:13px}
+.arc-empty{padding:40px 16px;text-align:center;color:var(--muted);font-size:12px}
+.arc-del{background:none;border:none;color:#d1d5db;cursor:pointer;font-size:15px;padding:0 2px;float:right;line-height:1}
+.arc-del:hover{color:#ef4444}
+
+/* ── ERROR ── */
+.err-block{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;color:#dc2626;font-size:12.5px;line-height:1.6}
+
+/* ── PRINT STYLES ── */
+@media print {
+  header,nav,.url-row,.progress-wrap,.steps,.export-bar,.btn-pdf,.btn-drive,.btn-cancel,#config-tab,#archive-tab,nav,.arc-grid>div:first-child{display:none!important}
+  body{background:white;font-size:11pt}
+  .card{border:none;box-shadow:none;page-break-inside:avoid}
+  .report-header{background:#0a1628!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;color:white!important}
+  .acc-body{display:block!important}
+  main{padding:0;max-width:100%}
+  @page{margin:1.5cm 2cm;size:A4}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-icon">📰</div>
+    <div>
+      <div class="logo-text">Évaluateur de médias</div>
+      <div class="logo-sub">Fonds d'émergence presse · Ministère de la Culture</div>
+    </div>
+  </div>
+  <nav>
+    <button class="active" onclick="showTab('analyze')">🔎 Analyser</button>
+    <button onclick="showTab('archive')" id="archive-tab">📂 Fiches (<span id="arc-count">0</span>)</button>
+    <button onclick="showTab('config')" id="config-tab">⚙ Config</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ══ TAB: ANALYZE ══ -->
+<div id="tab-analyze">
+  <div class="card">
+    <div class="card-header"><h2>URL du média à évaluer</h2><span id="api-status" class="setup-badge setup-warn">Clé API manquante</span></div>
+    <div class="card-body">
+      <div class="url-row">
+        <input type="url" id="url-input" placeholder="https://exemple-media.fr" onkeydown="if(event.key==='Enter')doAnalyze()">
+        <button class="btn-analyze" id="btn-go" onclick="doAnalyze()">Analyser →</button>
+        <button class="btn-cancel" id="btn-cancel" style="display:none" onclick="doCancel()">✕ Annuler</button>
+      </div>
+      <div id="progress-area" style="display:none">
+        <div class="progress-wrap">
+          <div class="progress-top"><span class="progress-stage" id="stage-label">Initialisation…</span><span id="elapsed-label">0s / 120s</span></div>
+          <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+        </div>
+        <div class="steps" style="margin-top:16px">
+          <div class="step" id="step1"><div class="step-dot" id="dot1">1</div><div class="step-label">Lecture</div></div>
+          <div class="step" id="step2"><div class="step-dot" id="dot2">2</div><div class="step-label">Analyse</div></div>
+          <div class="step" id="step3"><div class="step-dot" id="dot3">3</div><div class="step-label">Rapport</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="error-area" style="display:none" class="err-block"></div>
+  <div id="report-area" style="display:none"></div>
+</div>
+
+<!-- ══ TAB: ARCHIVE ══ -->
+<div id="tab-archive" style="display:none">
+  <div class="arc-grid">
+    <div class="arc-list">
+      <div class="arc-list-head">Fiches archivées</div>
+      <div id="arc-list-body"><div class="arc-empty">Aucune fiche</div></div>
+    </div>
+    <div id="arc-detail"><div style="text-align:center;padding:60px 20px;color:var(--muted);font-size:13px">← Sélectionnez une fiche</div></div>
+  </div>
+</div>
+
+<!-- ══ TAB: CONFIG ══ -->
+<div id="tab-config" style="display:none">
+  <div class="card">
+    <div class="card-header"><h2>Configuration API</h2></div>
+    <div class="card-body">
+      <div class="config-grid">
+        <div class="field">
+          <label>Clé API Anthropic <span style="color:#ef4444">*</span></label>
+          <input type="password" id="cf-anthropic" placeholder="sk-ant-api03-…">
+          <div class="field-hint">Obtenez votre clé sur <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></div>
+        </div>
+        <div class="field">
+          <label>Google OAuth Client ID</label>
+          <input type="text" id="cf-google" placeholder="XXXXXXXX.apps.googleusercontent.com">
+          <div class="field-hint">
+            Pour la sauvegarde Drive. <a href="#" onclick="showDriveSetup()">Comment l'obtenir ?</a>
+          </div>
+        </div>
+      </div>
+      <div id="drive-setup" style="display:none;margin-top:16px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:14px 16px">
+        <div style="font-size:11px;font-weight:700;color:#0369a1;text-transform:uppercase;margin-bottom:8px">📋 Configuration Google Drive (5 min)</div>
+        <ol style="font-size:12px;line-height:1.9;color:#0c4a6e;padding-left:16px">
+          <li>Allez sur <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a></li>
+          <li>Créez un projet (ou sélectionnez-en un existant)</li>
+          <li>Activez l'<strong>API Google Drive</strong> dans "APIs & Services"</li>
+          <li>Créez des identifiants → <strong>OAuth 2.0 Client ID</strong> → Type : Application Web</li>
+          <li>Ajoutez dans "Origines JS autorisées" : l'URL de ce fichier (<code>file://</code> ou votre domaine)</li>
+          <li>Copiez le Client ID et collez-le ci-dessus</li>
+        </ol>
+      </div>
+      <button class="btn-save-config" onclick="saveConfig()">Enregistrer</button>
+      <span id="config-saved" style="display:none;margin-left:10px;font-size:12px;color:var(--green)">✓ Enregistré</span>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ══ STORAGE ══
+const S = {
+  get: k => { try { return JSON.parse(localStorage.getItem(k)) } catch(_) { return null } },
+  set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+  del: k => localStorage.removeItem(k)
+};
+
+const FOLDER_ID = '1XlQw_UVWjREn2LiKqwY7-_bdpFNwaVnl';
+const CRITERIA = [
+  {id:'forme',         label:'Apparence formelle',         icon:'✍'},
+  {id:'formats',       label:'Diversité des formats',       icon:'🎬'},
+  {id:'services',      label:'Services non éditoriaux',     icon:'⚙'},
+  {id:'qualite',       label:'Qualité éditoriale',          icon:'🔍'},
+  {id:'positionnement',label:'Cohérence positionnement',    icon:'🎯'},
+  {id:'orientation',   label:'Orientation éditoriale',      icon:'🧭'},
+  {id:'reputation',    label:'Réputation',                  icon:'📡'},
+];
+const NC = n => n>=4.5?'#0a7c42':n>=3.5?'#4d7c0f':n>=2.5?'#b45309':n>=1.5?'#c2410c':'#b91c1c';
+const NL = n => n>=4.5?'Excellent':n>=3.5?'Bon':n>=2.5?'Correct':n>=1.5?'Insuffisant':'Très insuffisant';
+const SQ = n => '■'.repeat(Math.max(0,Math.min(5,n)))+'□'.repeat(Math.max(0,5-Math.min(5,n)));
+const RECO = {
+  favorable:   {label:'Favorable',               color:'#065f46',bg:'#d1fae5',border:'#a7f3d0'},
+  reserves:    {label:'Favorable avec réserves', color:'#92400e',bg:'#fef3c7',border:'#fde68a'},
+  defavorable: {label:'Défavorable',             color:'#991b1b',bg:'#fee2e2',border:'#fecaca'},
+};
+
+// ══ TABS ══
+let currentTab = 'analyze';
+function showTab(t) {
+  currentTab = t;
+  ['analyze','archive','config'].forEach(x => {
+    document.getElementById('tab-'+x).style.display = x===t ? '' : 'none';
+  });
+  document.querySelectorAll('nav button').forEach((b,i) => {
+    b.classList.toggle('active', ['analyze','archive','config'][i] === t);
+  });
+  if (t === 'archive') renderArcList();
+}
+
+// ══ CONFIG ══
+function loadConfig() {
+  const cfg = S.get('cfg') || {};
+  if (cfg.anthropic) document.getElementById('cf-anthropic').value = cfg.anthropic;
+  if (cfg.google) document.getElementById('cf-google').value = cfg.google;
+  updateApiStatus();
+}
+function saveConfig() {
+  const cfg = {
+    anthropic: document.getElementById('cf-anthropic').value.trim(),
+    google: document.getElementById('cf-google').value.trim()
+  };
+  S.set('cfg', cfg);
+  updateApiStatus();
+  document.getElementById('config-saved').style.display = '';
+  setTimeout(() => document.getElementById('config-saved').style.display = 'none', 2500);
+}
+function updateApiStatus() {
+  const cfg = S.get('cfg') || {};
+  const el = document.getElementById('api-status');
+  if (cfg.anthropic) { el.textContent = '✓ API configurée'; el.className = 'setup-badge setup-ok'; }
+  else { el.textContent = '⚠ Clé API manquante'; el.className = 'setup-badge setup-warn'; }
+}
+function showDriveSetup() {
+  const el = document.getElementById('drive-setup');
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+  return false;
+}
+
+// ══ ANALYSIS ══
+let abortCtrl = null;
+let timerInterval = null;
+let startTime = 0;
+const TIMEOUT = 120000;
+
+const SYSTEM = `Expert évaluation médias français (Fonds d'émergence presse, Ministère de la Culture, critères CDJM).
+IMPORTANT : fais EXACTEMENT 3 recherches web. Pas plus.
+Réponds UNIQUEMENT en JSON valide, sans markdown ni backticks.
+Schéma strict :
+{"nom":"","url":"","date_analyse":"JJ/MM/AAAA","description_courte":"","acces_contenu":"full|partiel","nb_articles_analyses":0,"criteres":{"forme":{"note":1,"analyse":"","points_positifs":[],"points_negatifs":[]},"formats":{"note":1,"analyse":"","points_positifs":[],"points_negatifs":[]},"services":{"note":1,"analyse":"","points_positifs":[],"points_negatifs":[]},"qualite":{"note":1,"analyse":"","points_positifs":[],"points_negatifs":[]},"positionnement":{"note":1,"analyse":"","points_positifs":[],"points_negatifs":[]},"orientation":{"note":1,"analyse":"","qualifications":[]},"reputation":{"note":1,"analyse":"","sources_consultees":[],"incidents":[]}},"note_globale":"X.X","synthese":"","recommandation_subvention":"favorable|reserves|defavorable","motif_recommandation":"","avertissements":[]}
+Echelle notes : 1=très insuffisant 2=insuffisant 3=correct 4=bon 5=excellent. Analyse concise : 3 phrases max par critère.`;
+
+function setStep(n) {
+  [1,2,3].forEach(i => {
+    const s = document.getElementById('step'+i);
+    const d = document.getElementById('dot'+i);
+    s.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+    d.textContent = i < n ? '✓' : String(i);
+  });
+}
+
+function setStage(msg) { document.getElementById('stage-label').textContent = msg; }
+
+function startTimer() {
+  startTime = Date.now();
+  timerInterval = setInterval(() => {
+    const el = Date.now() - startTime;
+    const pct = Math.min(96, Math.round(el / TIMEOUT * 100));
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('elapsed-label').textContent = Math.round(el/1000) + 's / ' + (TIMEOUT/1000) + 's';
+  }, 500);
+}
+function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
+
+async function doAnalyze() {
+  const cfg = S.get('cfg') || {};
+  if (!cfg.anthropic) { showError('Clé API Anthropic manquante — allez dans ⚙ Config.'); return; }
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) return;
+  const siteUrl = url.startsWith('http') ? url : 'https://' + url;
+
+  if (abortCtrl) try { abortCtrl.abort(); } catch(_) {}
+  abortCtrl = new AbortController();
+  const timeoutId = setTimeout(() => abortCtrl.abort(), TIMEOUT);
+
+  document.getElementById('btn-go').style.display = 'none';
+  document.getElementById('btn-cancel').style.display = '';
+  document.getElementById('progress-area').style.display = '';
+  document.getElementById('error-area').style.display = 'none';
+  document.getElementById('report-area').style.display = 'none';
+  setStep(1); setStage('Lecture du site…'); startTimer();
+
+  try {
+    const today = new Date().toLocaleDateString('fr-FR');
+    const domain = new URL(siteUrl).hostname;
+
+    setStage('Collecte des informations…'); setStep(1);
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      signal: abortCtrl.signal,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': cfg.anthropic, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 5000,
+        system: SYSTEM,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content:
+`Analyse ce site de presse : ${siteUrl}
+Date : ${today}
+
+Fais ces 3 recherches EXACTEMENT (pas plus) :
+1. "${siteUrl}" → page d'accueil, structure, rubriques, mentions légales
+2. "${domain} articles récents" → max 10 articles, qualité éditoriale
+3. "${domain} réputation journalisme" → incidents, notoriété
+
+Génère le JSON complet selon le schéma. Reste concis.`
+        }]
+      })
+    });
+    clearTimeout(timeoutId);
+    setStep(2); setStage('Analyse éditoriale…');
+
+    if (!res.ok) { const t = await res.text(); throw new Error(`API ${res.status}: ${t.slice(0,200)}`); }
+    const data = await res.json();
+
+    setStep(3); setStage('Génération du rapport…');
+    const txt = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+    if (!txt) throw new Error('Réponse vide de l\'API.');
+
+    let js = txt;
+    const m = txt.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (m) js = m[1];
+    else { const a = txt.indexOf('{'), b = txt.lastIndexOf('}'); if (a > -1 && b > -1) js = txt.slice(a, b+1); }
+    const parsed = JSON.parse(js);
+
+    archiveSave(parsed);
+    renderReport(parsed);
+    document.getElementById('report-area').style.display = '';
+
+  } catch(e) {
+    clearTimeout(timeoutId);
+    if (e.name === 'AbortError') showError('Délai dépassé (2 min). Le site est peut-être inaccessible. Réessayez.');
+    else showError(e.message || 'Erreur lors de l\'analyse.');
+  } finally {
+    stopTimer();
+    document.getElementById('btn-go').style.display = '';
+    document.getElementById('btn-cancel').style.display = 'none';
+    document.getElementById('progress-area').style.display = 'none';
+  }
+}
+
+function doCancel() {
+  if (abortCtrl) try { abortCtrl.abort(); } catch(_) {}
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-area');
+  el.innerHTML = '<strong>Erreur :</strong> ' + msg;
+  el.style.display = '';
+}
+
+// ══ REPORT RENDER ══
+function renderReport(data, container) {
+  const el = container || document.getElementById('report-area');
+  const avg = parseFloat(data.note_globale);
+  const r = RECO[data.recommandation_subvention] || RECO.reserves;
+  const warns = (data.avertissements || []);
+
+  const criteriaRows = CRITERIA.map(c => {
+    const d = data.criteres[c.id]; if (!d) return '';
+    return `<div class="crit-row"><span class="crit-name">${c.icon} ${c.label}</span><span class="crit-score" style="color:${NC(d.note)}">${SQ(d.note)} ${d.note}/5</span></div>`;
+  }).join('');
+
+  const detailBlocks = CRITERIA.map((c, i) => {
+    const d = data.criteres[c.id]; if (!d) return '';
+    const pos = (d.points_positifs || []).map(p => `<div class="acc-point"><span style="color:#22c55e">+</span>${p}</div>`).join('');
+    const neg = (d.points_negatifs || []).map(p => `<div class="acc-point"><span style="color:#ef4444">−</span>${p}</div>`).join('');
+    const quals = d.qualifications?.length ? `<div class="tags">${d.qualifications.map(q=>`<span class="tag">${q}</span>`).join('')}</div>` : '';
+    const inc = d.incidents?.length ? `<div class="incidents"><strong>⚠ Incidents :</strong> ${d.incidents.join(' — ')}</div>` : '';
+    return `<div class="acc-item">
+      <button class="acc-btn" onclick="toggleAcc(this)">
+        <div class="acc-left"><span class="acc-icon">${c.icon}</span><div><div class="acc-title">${c.label}</div></div></div>
+        <div class="acc-right"><span class="acc-score" style="color:${NC(d.note)}">${SQ(d.note)} ${d.note}/5 — ${NL(d.note)}</span><span class="acc-chevron">▾</span></div>
+      </button>
+      <div class="acc-body" style="display:none">
+        <p class="acc-analysis">${d.analyse}</p>
+        ${pos || neg ? `<div class="acc-cols">${pos ? `<div><div class="acc-col-title" style="color:#16a34a">Points positifs</div>${pos}</div>` : '<div></div>'}${neg ? `<div><div class="acc-col-title" style="color:#dc2626">Points négatifs</div>${neg}</div>` : '<div></div>'}</div>` : ''}
+        ${quals}${inc}
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `<div class="card" id="print-report">
+    <div class="report-header">
+      <div class="report-meta">Fonds d'émergence presse · Évaluation experte · ${data.date_analyse}</div>
+      <div class="report-name">${data.nom}</div>
+      <div class="report-url"><a href="${data.url}" target="_blank">${data.url}</a>${data.nb_articles_analyses ? ` · ${data.nb_articles_analyses} articles analysés` : ''}${data.acces_contenu && data.acces_contenu !== 'full' ? ` · ⚠ ${data.acces_contenu}` : ''}</div>
+      <div class="report-desc">${data.description_courte}</div>
+    </div>
+    <div class="score-grid">
+      <div class="score-big">
+        <div class="score-label">Note globale</div>
+        <div class="score-num" style="color:${NC(avg)}">${avg}</div>
+        <div class="score-tag">/5 · ${NL(avg)}</div>
+      </div>
+      <div class="criteria-list">${criteriaRows}</div>
+    </div>
+    <div class="reco-block">
+      <div class="reco-label" style="color:${r.color}">Recommandation — Fonds d'émergence</div>
+      <div class="reco-title" style="color:${r.color}">${r.label}</div>
+      <div class="reco-text">${data.motif_recommandation}</div>
+    </div>
+    ${warns.length ? `<div class="warns"><div class="warns-head">⚠ Points d'attention</div>${warns.map(w=>`<div class="warns-item">• ${w}</div>`).join('')}</div>` : ''}
+    <div class="synth-block">
+      <div class="synth-label">Synthèse</div>
+      <div class="synth-text">${data.synthese}</div>
+    </div>
+    <div class="detail-head">Évaluation détaillée par critère</div>
+    ${detailBlocks}
+    <div class="export-bar">
+      <span id="export-status" class="export-status" style="display:none"></span>
+      <button class="btn-pdf" onclick="doPrint()">🖨 Imprimer / PDF</button>
+      <button class="btn-drive" id="btn-drive" onclick="doDrive()">☁ Sauvegarder sur Drive</button>
+    </div>
+  </div>`;
+
+  // Store current report for export
+  window._currentReport = data;
+}
+
+function toggleAcc(btn) {
+  const body = btn.nextElementSibling;
+  const chevron = btn.querySelector('.acc-chevron');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : '';
+  chevron.style.transform = open ? '' : 'rotate(180deg)';
+}
+
+// ══ PRINT / PDF ══
+function doPrint() {
+  // Expand all accordions before printing
+  document.querySelectorAll('.acc-body').forEach(b => b.style.display = '');
+  window.print();
+  // Re-collapse after print dialog
+  setTimeout(() => document.querySelectorAll('.acc-body').forEach(b => b.style.display = 'none'), 2000);
+}
+
+// ══ GOOGLE DRIVE UPLOAD ══
+let googleToken = null;
+
+function isLocalFile() { return location.protocol === 'file:'; }
+
+function showLocalFileModal() {
+  const existing = document.getElementById('local-modal');
+  if (existing) { existing.style.display = 'flex'; return; }
+  const modal = document.createElement('div');
+  modal.id = 'local-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `<div style="background:white;border-radius:12px;padding:28px;max-width:520px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="font-size:22px;margin-bottom:6px">⚠️ Fichier ouvert en local</div>
+    <p style="font-size:13px;color:#374151;line-height:1.7;margin-bottom:16px">Google OAuth ne fonctionne pas depuis un fichier ouvert par double-clic (<code style="background:#f3f4f6;padding:1px 5px;border-radius:3px">file://</code>). Il faut lancer un mini-serveur local en une commande.</p>
+    <div style="background:#1e293b;border-radius:8px;padding:14px 16px;margin-bottom:12px">
+      <div style="font-size:10px;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Windows — PowerShell ou cmd</div>
+      <code style="color:#a5f3fc;font-size:12.5px;font-family:monospace">python -m http.server 8080</code>
+    </div>
+    <div style="background:#1e293b;border-radius:8px;padding:14px 16px;margin-bottom:16px">
+      <div style="font-size:10px;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Mac / Linux — Terminal</div>
+      <code style="color:#a5f3fc;font-size:12.5px;font-family:monospace">python3 -m http.server 8080</code>
+    </div>
+    <ol style="font-size:12.5px;color:#374151;line-height:1.9;padding-left:18px;margin-bottom:16px">
+      <li>Ouvrez PowerShell <strong>dans le dossier</strong> où se trouve le fichier HTML</li>
+      <li>Tapez la commande ci-dessus et appuyez sur Entrée</li>
+      <li>Ouvrez Chrome et allez sur <a href="http://localhost:8080/media-evaluator.html" target="_blank" style="color:#1a56db;font-weight:700">http://localhost:8080/media-evaluator.html</a></li>
+      <li>Dans Google Console, assurez-vous que <code style="background:#f3f4f6;padding:1px 5px;border-radius:3px">http://localhost:8080</code> est dans les origines autorisées</li>
+    </ol>
+    <div style="background:#d1fae5;border:1px solid #a7f3d0;border-radius:7px;padding:10px 14px;font-size:12px;color:#065f46;margin-bottom:16px">
+      💡 <strong>Alternative sans configuration :</strong> utilisez <a href="https://app.netlify.com/drop" target="_blank" style="color:#065f46;font-weight:700">Netlify Drop</a> pour héberger le fichier gratuitement en 2 min.
+    </div>
+    <button onclick="document.getElementById('local-modal').style.display='none'" style="width:100%;padding:10px;background:#0a1628;color:white;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:700">Fermer</button>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+async function getGoogleToken() {
+  if (isLocalFile()) { showLocalFileModal(); throw new Error('Fichier ouvert en local — voir les instructions affichées.'); }
+  const cfg = S.get('cfg') || {};
+  if (!cfg.google) throw new Error('Client ID Google manquant. Configurez-le dans ⚙ Config.');
+  return new Promise((resolve, reject) => {
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: cfg.google,
+      scope: 'https://www.googleapis.com/auth/drive.file',
+      callback: (resp) => {
+        if (resp.error) reject(new Error(resp.error));
+        else { googleToken = resp.access_token; resolve(resp.access_token); }
+      }
+    });
+    client.requestAccessToken();
+  });
+}
+
+function buildHtmlDoc(data) {
+  const avg = parseFloat(data.note_globale);
+  const r = RECO[data.recommandation_subvention] || RECO.reserves;
+  const rows = CRITERIA.map(c => {
+    const d = data.criteres[c.id]; if (!d) return '';
+    const pos = (d.points_positifs||[]).map(p=>`<li style="color:#065f46">+ ${p}</li>`).join('');
+    const neg = (d.points_negatifs||[]).map(p=>`<li style="color:#991b1b">− ${p}</li>`).join('');
+    return `<h3 style="font-size:13pt;color:#0a1628;border-bottom:1px solid #e2e8f0;padding-bottom:5pt;margin-top:18pt">${c.icon} ${c.label} <span style="font-weight:400;font-size:11pt;color:${NC(d.note)}">— ${SQ(d.note)} ${d.note}/5 (${NL(d.note)})</span></h3>
+<p style="font-size:11pt;line-height:1.7;color:#374151">${d.analyse}</p>
+${pos||neg?`<table style="width:100%;border-collapse:collapse"><tr>${pos?`<td style="width:50%;vertical-align:top;padding-right:8pt"><strong style="font-size:10pt;color:#065f46">Points positifs</strong><ul>${pos}</ul></td>`:'<td></td>'}${neg?`<td style="vertical-align:top"><strong style="font-size:10pt;color:#991b1b">Points négatifs</strong><ul>${neg}</ul></td>`:'<td></td>'}</tr></table>`:''}`;
+  }).join('');
+
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+body{font-family:Georgia,serif;font-size:11pt;color:#1a2035;line-height:1.5;max-width:700px;margin:0 auto;padding:20px}
+h1{font-size:22pt;color:#0a1628;margin-bottom:4pt}
+h2{font-size:14pt;color:#0a1628;border-bottom:2px solid #0a1628;padding-bottom:5pt;margin:20pt 0 10pt}
+</style></head><body>
+<p style="font-size:9pt;color:#6b7a99;text-transform:uppercase;letter-spacing:1pt;border-bottom:1pt solid #e2e8f0;padding-bottom:8pt">Fonds d'émergence presse · Ministère de la Culture · Évaluation experte</p>
+<h1>${data.nom}</h1>
+<p style="color:#6b7a99;font-size:10pt">${data.url} · Analyse du ${data.date_analyse}${data.nb_articles_analyses?' · '+data.nb_articles_analyses+' articles':''}</p>
+<p style="border-left:3pt solid #c8973a;padding-left:12pt;font-style:italic;color:#4b5563;font-size:12pt;line-height:1.6">${data.description_courte}</p>
+<table style="width:100%;border-collapse:collapse;margin:16pt 0;border:1pt solid #e2e8f0"><tr>
+<td style="width:130pt;text-align:center;padding:14pt;background:#f4f6f9;border-right:1pt solid #e2e8f0">
+<div style="font-size:9pt;color:#6b7a99;text-transform:uppercase">Note globale</div>
+<div style="font-size:44pt;font-weight:900;color:${NC(avg)};line-height:1">${avg}</div>
+<div style="font-size:10pt;color:#6b7a99">/5 · ${NL(avg)}</div>
+</td>
+<td style="padding:10pt 14pt">
+${CRITERIA.map(c=>{const d=data.criteres[c.id];if(!d)return'';return`<div style="display:flex;justify-content:space-between;border-bottom:1pt solid #f3f4f6;padding:3pt 0;font-size:11pt"><span>${c.icon} ${c.label}</span><span style="color:${NC(d.note)};font-weight:bold;font-family:monospace">${SQ(d.note)} ${d.note}/5</span></div>`;}).join('')}
+</td>
+</tr></table>
+<div style="background:${r.bg};border:1pt solid ${r.border};padding:12pt 16pt;margin:12pt 0">
+<p style="font-size:9pt;text-transform:uppercase;font-weight:700;color:${r.color};margin:0 0 4pt">Recommandation</p>
+<p style="font-size:15pt;font-weight:800;color:${r.color};margin:0 0 6pt">${r.label}</p>
+<p style="font-size:11pt;color:#374151;line-height:1.7;margin:0">${data.motif_recommandation}</p>
+</div>
+${(data.avertissements||[]).length?`<div style="background:#fff7ed;border:1pt solid #fed7aa;padding:10pt 14pt;margin:10pt 0"><strong style="font-size:9pt;color:#c2410c">⚠ POINTS D'ATTENTION</strong><br>${data.avertissements.map(a=>`• ${a}`).join('<br>')}</div>`:''}
+<div style="background:#f4f6f9;border:1pt solid #e2e8f0;padding:14pt 16pt;margin:12pt 0">
+<p style="font-size:9pt;text-transform:uppercase;color:#6b7a99;font-weight:700;margin:0 0 7pt">Synthèse</p>
+<p style="font-size:12pt;line-height:1.85;margin:0">${data.synthese}</p>
+</div>
+<h2>Évaluation détaillée par critère</h2>${rows}
+<p style="margin-top:28pt;padding-top:8pt;border-top:1pt solid #e5e7eb;font-size:9pt;color:#9ca3af;text-align:center">Fonds d'émergence presse · ${data.date_analyse}</p>
+</body></html>`;
+}
+
+async function doDrive() {
+  const data = window._currentReport;
+  if (!data) return;
+  const btn = document.getElementById('btn-drive');
+  const status = document.getElementById('export-status');
+  btn.disabled = true; btn.textContent = '⏳ Connexion Google…';
+  status.style.display = 'none';
+
+  try {
+    const token = await getGoogleToken();
+    btn.textContent = '⏳ Upload en cours…';
+
+    const filename = `Evaluation_${data.nom.replace(/[^a-zA-Z0-9]/g,'_')}_${data.date_analyse.replace(/\//g,'-')}.html`;
+    const content = buildHtmlDoc(data);
+    const blob = new Blob([content], { type: 'text/html; charset=utf-8' });
+
+    const meta = JSON.stringify({ name: filename, parents: [FOLDER_ID], mimeType: 'text/html' });
+    const form = new FormData();
+    form.append('metadata', new Blob([meta], { type: 'application/json' }));
+    form.append('file', blob);
+
+    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token },
+      body: form
+    });
+    if (!res.ok) { const t = await res.text(); throw new Error('Drive API: ' + t.slice(0,150)); }
+    const file = await res.json();
+    const fileUrl = 'https://drive.google.com/file/d/' + file.id + '/view';
+
+    btn.textContent = '✓ Sauvegardé';
+    btn.style.background = '#065f46';
+    status.innerHTML = `✓ Fichier créé sur Drive — <a href="${fileUrl}" target="_blank" style="color:#065f46;font-weight:700">Ouvrir →</a>`;
+    status.className = 'export-status export-ok';
+    status.style.display = '';
+
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '☁ Sauvegarder sur Drive';
+    status.textContent = '⚠ ' + e.message;
+    status.className = 'export-status export-err';
+    status.style.display = '';
+  }
+}
+
+// ══ ARCHIVES ══
+function archiveSave(data) {
+  const id = String(Date.now());
+  const meta = { id, nom: data.nom, url: data.url, date: data.date_analyse, note: data.note_globale, reco: data.recommandation_subvention };
+  S.set('rep:' + id, data);
+  let idx = S.get('rep:index') || [];
+  idx.unshift(meta); if (idx.length > 50) idx = idx.slice(0, 50);
+  S.set('rep:index', idx);
+  document.getElementById('arc-count').textContent = idx.length;
+}
+
+function renderArcList() {
+  const idx = S.get('rep:index') || [];
+  document.getElementById('arc-count').textContent = idx.length;
+  const el = document.getElementById('arc-list-body');
+  if (!idx.length) { el.innerHTML = '<div class="arc-empty">Aucune fiche archivée</div>'; return; }
+  el.innerHTML = idx.map(it => {
+    const r = RECO[it.reco] || RECO.reserves;
+    return `<div class="arc-item" onclick="loadArc('${it.id}')">
+      <button class="arc-del" onclick="event.stopPropagation();delArc('${it.id}')">×</button>
+      <div class="arc-item-name">${it.nom}</div>
+      <div class="arc-item-meta">
+        <span>${it.date}</span>
+        <span><span class="arc-item-note" style="color:${NC(parseFloat(it.note))}">${it.note}</span>/5 <span style="font-size:10px;padding:1px 6px;border-radius:8px;background:${r.bg};color:${r.color};font-weight:700">${it.reco==='favorable'?'✓':it.reco==='reserves'?'~':'✗'}</span></span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function loadArc(id) {
+  document.querySelectorAll('.arc-item').forEach(el => el.classList.remove('sel'));
+  event.currentTarget.classList.add('sel');
+  const data = S.get('rep:' + id);
+  if (!data) return;
+  const container = document.getElementById('arc-detail');
+  container.innerHTML = '';
+  const wrap = document.createElement('div');
+  container.appendChild(wrap);
+  window._currentReport = data;
+  renderReport(data, wrap);
+}
+
+function delArc(id) {
+  S.del('rep:' + id);
+  let idx = S.get('rep:index') || [];
+  idx = idx.filter(x => x.id !== id);
+  S.set('rep:index', idx);
+  renderArcList();
+  document.getElementById('arc-detail').innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--muted);font-size:13px">← Sélectionnez une fiche</div>';
+}
+
+// ══ INIT ══
+loadConfig();
+const idx0 = S.get('rep:index') || [];
+document.getElementById('arc-count').textContent = idx0.length;
+</script>
+</body>
+</html>
